@@ -75,7 +75,7 @@ public class Ffmpegdecoder {
      * native解码时时更新java层帧数据
      */
     public void updateVideoSize(int width, int height) {
-        StringBuilder wh = new StringBuilder(width).append(",").append(height);
+        StringBuilder wh = new StringBuilder().append(width).append(",").append(height);
         CommonUtil.callUnity(wh.toString(), Method_Init_Yuv);
         LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder video size : " + wh);
     }
