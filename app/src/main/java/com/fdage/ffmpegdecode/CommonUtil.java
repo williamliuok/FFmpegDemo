@@ -1,6 +1,7 @@
 package com.fdage.ffmpegdecode;
 
 import android.app.Activity;
+import android.text.TextUtils;
 
 
 import java.lang.reflect.InvocationTargetException;
@@ -32,24 +33,19 @@ public class CommonUtil {
         return mActivity;
     }
 
-    static String gameObjectName;
-    static String functionName;
+    private static final String gameObjectName = "AndroidHelper";
+    public static String Method_Init_Yuv = "InitYUV";
+    public static String Method_Show_Yuv = "ShowYUV";
 
-    /**
-     * 调用Unity的方法
-     *
-     * @param args 参数
-     * @return 调用是否成功
-     */
-    public static boolean callUnity(String args) {
-        if (gameObjectName == null || functionName == null) {
-            gameObjectName = "AndroidHelper";
-            functionName = "ShowYUV";
+
+    public static boolean callUnity(String args, String methodName) {
+        if (TextUtils.isEmpty(methodName)) {
+            return false;
         }
         try {
             Class<?> classtype = Class.forName("com.unity3d.player.UnityPlayer");
             Method method = classtype.getMethod("UnitySendMessage", String.class, String.class, String.class);
-            method.invoke(classtype, gameObjectName, functionName, args);
+            method.invoke(classtype, gameObjectName, methodName, args);
             return true;
         } catch (ClassNotFoundException e) {
             LogUtil.e("TAG", "getActivity: " + e.getMessage());

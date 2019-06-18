@@ -18,17 +18,31 @@ extern "C" {
 const char *METHOD_UPDATE_FRAME_DATA = "updateFrameData";
 const char *METHOD_SIG_UPDATE_FRAME_DATA = "([B)V";
 
+const char *METHOD_UPDATE_VIDEO_SIZE = "updateVideoSize";
+const char *METHOD_SIG_UPDATE_VIDEO_SIZE = "(II)V";
+
 static bool shouldStopDecode = false; // 是否继续解码解码标志位
 
 void
-callNative(JNIEnv *env, jobject thiz, const char *methodName, const char *methodSig, char *bytes,
-           int length) {
+callNativeUpdateFrame(JNIEnv *env, jobject thiz, char *bytes,
+                      int length) {
     jclass clazz = env->GetObjectClass(thiz);//获取该对象的类
-    jmethodID m_mid = env->GetMethodID(clazz, methodName, methodSig);//获取JAVA方法的ID
+    jmethodID m_mid = env->GetMethodID(clazz, METHOD_UPDATE_FRAME_DATA,
+                                       METHOD_SIG_UPDATE_FRAME_DATA);//获取JAVA方法的ID
     jbyteArray RtnArr = env->NewByteArray(length);
     env->SetByteArrayRegion(RtnArr, 0, length, (jbyte *) bytes);
     env->CallVoidMethod(thiz, m_mid, RtnArr);
     env->DeleteLocalRef(RtnArr); // 清除LocalRef中的引用，防止native memory的内存泄漏
+    env->DeleteLocalRef(clazz); // 清除LocalRef中的引用，防止native memory的内存泄漏
+}
+
+
+void
+callNativeUpdateVideoSize(JNIEnv *env, jobject thiz, int width, int height) {
+    jclass clazz = env->GetObjectClass(thiz);//获取该对象的类
+    jmethodID m_mid = env->GetMethodID(clazz, METHOD_UPDATE_VIDEO_SIZE,
+                                       METHOD_SIG_UPDATE_VIDEO_SIZE);//获取JAVA方法的ID
+    env->CallVoidMethod(thiz, m_mid, width, height);
     env->DeleteLocalRef(clazz); // 清除LocalRef中的引用，防止native memory的内存泄漏
 }
 
@@ -117,6 +131,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     // 获取视频宽高
     int videoWidth = pCodecCtx->width;
     int videoHeight = pCodecCtx->height;
+    callNativeUpdateVideoSize(env, instance, videoWidth, videoHeight);
     std::cout << "videoWidth : " << videoWidth << std::endl;
     std::cout << "videoHeight : " << videoHeight << std::endl;
 
@@ -208,8 +223,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
 //                    memcpy(s + a, pFrame->data[2] + i * pFrame->linesize[2], videoWidth / 2);
 //                    a += videoWidth / 2;
 //                }
-                callNative(env, instance, METHOD_UPDATE_FRAME_DATA, METHOD_SIG_UPDATE_FRAME_DATA,
-                           reinterpret_cast<char *>(s), newSize);
+                callNativeUpdateFrame(env, instance, reinterpret_cast<char *>(s), newSize);
                 delete[] s;
                 if (shouldStopDecode) {
                     break;

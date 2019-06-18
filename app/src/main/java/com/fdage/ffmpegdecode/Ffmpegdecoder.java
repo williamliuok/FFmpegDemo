@@ -3,7 +3,8 @@ package com.fdage.ffmpegdecode;
 import android.app.Activity;
 import android.util.Base64;
 
-import java.io.UnsupportedEncodingException;
+import static com.fdage.ffmpegdecode.CommonUtil.Method_Init_Yuv;
+import static com.fdage.ffmpegdecode.CommonUtil.Method_Show_Yuv;
 
 /**
  * @Author William Liu
@@ -20,6 +21,7 @@ public class Ffmpegdecoder {
     private final int retrySleepTime = 500; //　解码失败时尝试时休眠间隔时长
 
     public Ffmpegdecoder() {
+
     }
 
     public Ffmpegdecoder(Activity activity) {
@@ -69,6 +71,14 @@ public class Ffmpegdecoder {
         return null;
     }
 
+    /**
+     * native解码时时更新java层帧数据
+     */
+    public void updateVideoSize(int width, int height) {
+        StringBuilder wh = new StringBuilder(width).append(",").append(height);
+        CommonUtil.callUnity(wh.toString(), Method_Init_Yuv);
+        LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder video size : " + wh);
+    }
 
     /**
      * native解码时时更新java层帧数据
@@ -80,9 +90,8 @@ public class Ffmpegdecoder {
             System.arraycopy(bytes, 0, mByte, 0, bytes.length);
         }
         if (needCallUnity) {
-//                String s = new String(bytes, "US-ASCII");
             String s = Base64.encodeToString(bytes, Base64.DEFAULT);
-            CommonUtil.callUnity(s);
+            CommonUtil.callUnity(s, Method_Show_Yuv);
             LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder bytes length : " + bytes.length);
             LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder String length : " + s.length());
         }
@@ -91,6 +100,5 @@ public class Ffmpegdecoder {
     public native int playVideo(String url);
 
     public native void stopFFmpegDecode();
-
 
 }
