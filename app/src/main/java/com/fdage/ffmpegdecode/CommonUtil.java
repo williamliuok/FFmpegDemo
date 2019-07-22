@@ -15,11 +15,14 @@ import java.lang.reflect.Method;
 public class CommonUtil {
 
     private static Activity mActivity;
+    private static Class<?> classtype;
 
     public static Activity getActivity() {
         if (null == mActivity) {
             try {
-                Class<?> classtype = Class.forName("com.unity3d.player.UnityPlayer");
+                if (null == classtype) {
+                    classtype = Class.forName("com.unity3d.player.UnityPlayer");
+                }
                 Activity activity = (Activity) classtype.getDeclaredField("currentActivity").get(classtype);
                 mActivity = activity;
             } catch (ClassNotFoundException e) {
@@ -43,7 +46,9 @@ public class CommonUtil {
             return false;
         }
         try {
-            Class<?> classtype = Class.forName("com.unity3d.player.UnityPlayer");
+            if (null == classtype) {
+                classtype = Class.forName("com.unity3d.player.UnityPlayer");
+            }
             Method method = classtype.getMethod("UnitySendMessage", String.class, String.class, String.class);
             method.invoke(classtype, gameObjectName, methodName, args);
             return true;
