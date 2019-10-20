@@ -260,6 +260,9 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
                 int pic_size = pCodecCtx->width * pCodecCtx->height;
                 int newSize = pic_size * 1.5;
 
+                LOGD("FfmpegTag frame data pFrame->data[0]: %s", pFrame->data[0]);
+                LOGD("FfmpegTag frame data pFrame->data[1]: %s", pFrame->data[1]);
+                LOGD("FfmpegTag frame data pFrame->data[2]: %s", pFrame->data[2]);
                 unsigned char *s = new unsigned char[newSize];
                 //写入数据
                 memcpy(s, pFrame->data[0], pic_size); // 写入Y
@@ -278,6 +281,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
 //                    memcpy(s + a, pFrame->data[2] + i * pFrame->linesize[2], videoWidth / 2);
 //                    a += videoWidth / 2;
 //                }
+                LOGD("FfmpegTag frame data: %s", s);
                 callNativeUpdateFrame(env, instance, reinterpret_cast<char *>(s), newSize);
                 delete[] s;
                 if (shouldStopDecode) {
@@ -315,7 +319,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
 }
 
 extern "C" {
-void StopDecode() {
+void stop_decode() {
     shouldStopDecode = true;
 }
 }
@@ -333,9 +337,9 @@ void wirteToLocal(char *msg) {
 }
 
 extern "C" {
-typedef void (*YUVDataHandle)(char *data, int width, int height);
+typedef void (*YUVDataHandle)(char *data, int length, int width, int height);
 YUVDataHandle _Android_YuvDataHandle;
-void StartDecode(const char *file_name, YUVDataHandle callback) {
+void start_decode(const char *file_name, YUVDataHandle callback) {
     _Android_YuvDataHandle = callback;
     shouldStopDecode = false;
     std::cout << "FfmpegTag start play, shouldStopDecode: " << shouldStopDecode << std::endl;
@@ -382,8 +386,7 @@ void StartDecode(const char *file_name, YUVDataHandle callback) {
     AVCodecContext *pCodecCtx = pFormatCtx->streams[videoStream]->codec;
 
     // Find the decoder for the video stream
-    AVCodec *pCodec = avcodec_find_decoder(
-            pFormatCtx->streams[videoStream]->codecpar->codec_id);
+    AVCodec *pCodec = avcodec_find_decoder(pFormatCtx->streams[videoStream]->codecpar->codec_id);
 //    AVCodec *pCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
     std::cout << "FfmpegTag codec_id : " << pCodecCtx->codec_id << std::endl;
     std::cout << "FfmpegTag AVCodec name : " << pCodec->name << std::endl;
@@ -405,6 +408,7 @@ void StartDecode(const char *file_name, YUVDataHandle callback) {
     // 获取视频宽高
     int videoWidth = pCodecCtx->width;
     int videoHeight = pCodecCtx->height;
+
     std::cout << "videoWidth : " << videoWidth << std::endl;
     std::cout << "videoHeight : " << videoHeight << std::endl;
 
@@ -431,8 +435,7 @@ void StartDecode(const char *file_name, YUVDataHandle callback) {
 
     // Determine required buffer size and allocate buffer
     // buffer中数据就是用于渲染的,且格式为RGBA
-    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width,
-                                            pCodecCtx->height,
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height,
                                             1);
     uint8_t *buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
     av_image_fill_arrays(pFrameYUV->data, pFrameYUV->linesize, buffer, AV_PIX_FMT_YUV420P,
@@ -456,10 +459,9 @@ void StartDecode(const char *file_name, YUVDataHandle callback) {
     while (av_read_frame(pFormatCtx, &packet) >= 0) {
         // Is this a packet from the video stream?
         if (packet.stream_index == videoStream) {
-            LOGD("pFrame->width : %d  ", pFrame->width);
-            LOGD("pFrame->linesize : %d  ", pFrame->linesize[0]);
+
             // Decode video frame
-       //     avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
+            avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
 
             // 并不是decode一次就可解码出一帧
             if (frameFinished) {
@@ -479,11 +481,8 @@ void StartDecode(const char *file_name, YUVDataHandle callback) {
 
                 int pic_size = pCodecCtx->width * pCodecCtx->height;
                 int newSize = pic_size * 1.5;
-//                LOGD("pFrame->width : %d  ", pFrame->width);
-//                LOGD("pFrame->linesize : %d  ", pFrame->linesize);
-//                LOGD("pFrame->data : %s  ", pFrame->data[0]);
 
-                unsigned char *s = new unsigned char[newSize];
+                char *s = new char[newSize];
                 //写入数据
                 memcpy(s, pFrame->data[0], pic_size); // 写入Y
                 memcpy(s + pic_size, pFrame->data[1], pic_size / 4); // 写入U
@@ -501,9 +500,9 @@ void StartDecode(const char *file_name, YUVDataHandle callback) {
 //                    memcpy(s + a, pFrame->data[2] + i * pFrame->linesize[2], videoWidth / 2);
 //                    a += videoWidth / 2;
 //                }
-                LOGD("data : %s  ", reinterpret_cast<char *>(s));
-                wirteToLocal(reinterpret_cast<char *>(s));
-                _Android_YuvDataHandle("suibian", videoWidth, videoHeight);
+//                callNativeUpdateFrame(env, instance, reinterpret_cast<char *>(s), newSize);
+//                char *data, int width, int height
+                _Android_YuvDataHandle(s, newSize, videoWidth, videoHeight);
                 delete[] s;
                 if (shouldStopDecode) {
                     break;

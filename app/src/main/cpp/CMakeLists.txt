@@ -14,11 +14,11 @@ add_library(libavutil SHARED IMPORTED)
 #add_library(libswresample SHARED IMPORTED)
 add_library(libswscale SHARED IMPORTED)
 
-set_target_properties(libavcodec PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libavcodec-57.so)
-set_target_properties(libavformat PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libavformat-57.so)
-set_target_properties(libavutil PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libavutil-55.so)
+set_target_properties(libavcodec PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libavcodec.so)
+set_target_properties(libavformat PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libavformat.so)
+set_target_properties(libavutil PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libavutil.so)
 #set_target_properties(libswresample PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libswresample-2.so)
-set_target_properties(libswscale PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libswscale-4.so)
+set_target_properties(libswscale PROPERTIES IMPORTED_LOCATION ${JNI}/../../../libs/${ANDROID_ABI}/libswscale.so)
 
 include_directories(${JNI}/include)
 
