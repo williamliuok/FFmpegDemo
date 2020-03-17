@@ -38,6 +38,20 @@ add_library( # Sets the name of the library.
         AndroidBuf.cpp
         AndroidBuf.h
         log.h
+        rtsp.cc
+        )
+
+add_library( # Sets the name of the library.
+        rtsp
+
+        # Sets the library as a shared library.
+        SHARED
+
+        # Provides a relative path to your source file(s).
+        AndroidBuf.cpp
+        AndroidBuf.h
+        log.h
+        rtsp.cc
         )
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -66,6 +80,19 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
         fdageffmpeg
+
+        libavcodec
+        libavformat
+        libavutil
+        #        libswresample
+        libswscale
+        # Links the target library to the log library
+        # included in the NDK.
+        ${android-lib}
+        ${log-lib})
+
+target_link_libraries( # Specifies the target library.
+        rtsp
 
         libavcodec
         libavformat
