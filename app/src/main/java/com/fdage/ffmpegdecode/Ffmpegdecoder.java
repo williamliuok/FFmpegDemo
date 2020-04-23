@@ -18,6 +18,7 @@ import static com.fdage.ffmpegdecode.CommonUtil.Method_Show_Yuv;
  */
 public class Ffmpegdecoder {
 
+
     private volatile byte[] mByte; // 存储每一帧解码数据YUV
     private boolean needCallUnity = true;
     private final int retryCount = 10; //　解码失败时尝试重试次数
@@ -41,15 +42,15 @@ public class Ffmpegdecoder {
      *
      * @param url 需要解码的数据流地址
      */
-    public int StartDecode(String url) {
+    public int playBackH264(String url, Surface surface) {
         shouldStart = true;
         int retry = 0;
-        int result = playVideo(url);
+        int result = startPlay(url, surface);
         while (shouldStart && result != 0 && retry++ < retryCount) {
             LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder play failed, retry time : " + retry);
             try {
                 Thread.sleep(retrySleepTime);
-                result = playVideo(url);
+                result = startPlay(url, surface);
             } catch (InterruptedException e) {
 
             }
@@ -84,6 +85,14 @@ public class Ffmpegdecoder {
     public void StopDecode() {
         shouldStart = false;
         stopFFmpegDecode();
+    }
+
+    public void StartRecord(String file, boolean isMp4){
+        startRecord(file, isMp4);
+    }
+
+    public void StopRecord(){
+        endRecord();
     }
 
     public synchronized byte[] GetDecodeByte() {
@@ -129,6 +138,10 @@ public class Ffmpegdecoder {
     public native void stopFFmpegDecode();
 
     private native int startPlay(String url, Surface surface);
+
+    private native int startRecord(String outfile, boolean isMp4);
+
+    private native int endRecord();
 
     private DecodeListener listener;
 

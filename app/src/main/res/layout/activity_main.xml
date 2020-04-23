@@ -20,12 +20,11 @@
         android:id="@+id/surface_view"
         android:layout_width="0dp"
         android:layout_height="300dp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
+<!--    <ImageView
         android:id="@+id/iv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -33,15 +32,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:srcCompat="@tools:sample/avatars" />
+        tools:srcCompat="@tools:sample/avatars" />-->
 
     <Button
         android:id="@+id/btn_start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="76dp"
+        android:layout_marginTop="26dp"
         android:layout_marginEnd="32dp"
-        android:text="开始"
+        android:text="开始预览"
         app:layout_constraintEnd_toStartOf="@+id/guideline"
         app:layout_constraintTop_toBottomOf="@+id/surface_view" />
 
@@ -50,10 +49,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
-        android:layout_marginTop="76dp"
-        android:text="结束"
+        android:layout_marginTop="26dp"
+        android:text="结束预览"
         app:layout_constraintStart_toStartOf="@+id/guideline"
         app:layout_constraintTop_toBottomOf="@+id/surface_view" />
+
+    <Button
+        android:id="@+id/btn_start_record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:layout_marginEnd="32dp"
+        android:text="开始录制"
+        app:layout_constraintEnd_toStartOf="@+id/guideline"
+        app:layout_constraintTop_toBottomOf="@+id/btn_start" />
+
+    <Button
+        android:id="@+id/btn_end_record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="26dp"
+        android:text="结束录制"
+        app:layout_constraintStart_toStartOf="@+id/guideline"
+        app:layout_constraintTop_toBottomOf="@+id/btn_end" />
 
     <android.support.constraint.Guideline
         android:id="@+id/guideline"
@@ -61,5 +80,42 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.5" />
+
+    <RadioGroup
+        android:id="@+id/rg_options"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_start_record" >
+        <RadioButton
+            android:id="@+id/rb_record_mp4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="录制MP4"/>
+
+        <RadioButton
+            android:id="@+id/rb_record_h264"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="录制H264"/>
+
+        <RadioButton
+            android:id="@+id/rb_replay_mp4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="回放MP4"/>
+
+        <RadioButton
+            android:id="@+id/rb_replay_h264"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="回放H264"/>
+    </RadioGroup>
+
 
 </android.support.constraint.ConstraintLayout>
