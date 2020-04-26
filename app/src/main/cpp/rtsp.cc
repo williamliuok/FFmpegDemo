@@ -28,7 +28,9 @@ YUVDataHandle _Android_YuvDataHandle;
 typedef void (*LiveErrorCallback)(int code);
 LiveErrorCallback recorder_callback = NULL;
 
+static int RESULT_OK = 0;
 static int ERROR_OUTPUT = -1;
+static int ERROR_INPUT = -2;
 
 static AVFormatContext *i_fmt_ctx = NULL;
 static AVStream *i_video_stream = NULL;
@@ -39,10 +41,14 @@ static AVOutputFormat *oformat;
 
 static FILE *fp = NULL;
 static bool shouldRecording = false; // 是否录制视频流
+static bool isEndRecording = false; // 是停止制视频流
 static bool shouldStopDecode = false; // 是否继续解码解码标志位
 static bool isMp4Recording = true; // 是否编码为mp4视频流
 static bool isH264Replay = false; // 是否H264视频流回放
 static bool isH264Encoding = false; // 是否H264视频流回放
+static int num = 1;
+static int last_pts = 0;
+static int last_dts = 0;
 
 void checkWriteError(size_t writeCount) {
     if (writeCount == 0) {
@@ -60,23 +66,33 @@ void endRecordMp4() {
 
     avio_close(o_fmt_ctx->pb);
     av_free(o_fmt_ctx);
+    shouldRecording = false;
+    LOGD("FfmpegTag endRecordMp4-------------");
 }
 
 void
 live_recording_start(const char *file_name, int archive, LiveErrorCallback live_error_callback) {
     recorder_callback = live_error_callback;
+    LOGD("FfmpegTag start recording ... url, %s", file_name);
     isMp4Recording = archive == 1;
     if (!isMp4Recording) {
         fp = fopen(file_name, "wb");
         shouldRecording = true;
+        recorder_callback(RESULT_OK);
         return;
     }
 
     oformat = av_guess_format(NULL, file_name, NULL);
 
     if (avformat_alloc_output_context2(&o_fmt_ctx, oformat, NULL, file_name) != 0) {
-        LOGW("初始化o_fmt_ctx结构体失败\n");
+        LOGE("初始化o_fmt_ctx结构体失败\n");
         recorder_callback(ERROR_OUTPUT);
+        return;
+    }
+
+    if(!i_video_stream){
+        LOGE("rtsp视频流不存在\n");
+        recorder_callback(ERROR_INPUT);
         return;
     }
 
@@ -106,9 +122,9 @@ live_recording_start(const char *file_name, int archive, LiveErrorCallback live_
     }
 
     // 列出输出文件的相关流信息
-    LOGW("------------------- 输出文件信息 ------------------\n");
+    LOGD("------------------- 输出文件信息 ------------------\n");
     av_dump_format(o_fmt_ctx, 0, file_name, 1);
-    LOGW("-------------------------------------------------\n");
+    LOGD("-------------------------------------------------\n");
 
     avio_open(&o_fmt_ctx->pb, file_name, AVIO_FLAG_WRITE);
 
@@ -117,26 +133,32 @@ live_recording_start(const char *file_name, int archive, LiveErrorCallback live_
     }
 
     if (!o_fmt_ctx->nb_streams) {
-        LOGW("output file dose not contain any stream\n");
+        LOGE("output file dose not contain any stream\n");
         recorder_callback(ERROR_OUTPUT);
         return;
     }
 
     // 根据文件名的后缀写相应格式的文件头
     if (avformat_write_header(o_fmt_ctx, NULL) < 0) {
-        LOGW("Could not write header for output file\n");
+        LOGE("Could not write header for output file\n");
         recorder_callback(ERROR_OUTPUT);
         return;
     }
 
     shouldRecording = true;
-    LOGW("------------------- 开始录视频 ------------------\n");
+    isEndRecording = false;
+    num = 1;
+    last_pts = 0;
+    last_dts = 0;
+    LOGD("------------------- 开始录视频 ------------------\n");
+    recorder_callback(RESULT_OK);
 }
 
 void live_recording_end() {
+    LOGD("FfmpegTag stop recording ...");
     if (shouldRecording) {
-
         shouldRecording = false;
+        isEndRecording = true;
         if (isMp4Recording) {
             endRecordMp4();
         } else {
@@ -148,6 +170,8 @@ void live_recording_end() {
 
 void
 start_decode(const char *file_name, YUVDataHandle callback) {
+    //if(!shouldStopDecode) return; //若已经开始解码，则直接返回
+
     _Android_YuvDataHandle = callback;
 
     shouldStopDecode = false;
@@ -166,6 +190,9 @@ start_decode(const char *file_name, YUVDataHandle callback) {
     if (int err_code = avformat_open_input(&i_fmt_ctx, file_name, NULL, &opts) != 0) {
         LOGE("FfmpegTag err_code : %d\n", err_code);
         LOGE("FfmpegTag Couldn't open file : %s \n", file_name);
+
+        // Close the video file
+        avformat_close_input(&i_fmt_ctx);
         return; // Couldn't open file
     }
 
@@ -255,8 +282,7 @@ start_decode(const char *file_name, YUVDataHandle callback) {
     AVPacket packet;
     AVPacket *p;
 
-    int last_pts = 0;
-    int last_dts = 0;
+
 
     int64_t pts, dts;
 
@@ -265,31 +291,8 @@ start_decode(const char *file_name, YUVDataHandle callback) {
     size_t writeCount = 0;
     int read_frame_result = av_read_frame(i_fmt_ctx, &packet);
     while (read_frame_result >= 0 && tryCount < retryDecodeCount) {
-        if (shouldRecording) {
-            if (isMp4Recording) {
-                p = av_packet_clone(&packet);
-                /*
-                 * pts and dts should increase monotonically
-                 * pts should be >= dts
-                 */
-                p->flags |= AV_PKT_FLAG_KEY;
-                pts = p->pts;
-                p->pts += last_pts;
-                dts = p->dts;
-                p->dts += last_dts;
-                p->stream_index = 0;
-                static int num = 1;
-                LOGD("write frame %d\n", num++);
-
-                av_interleaved_write_frame(o_fmt_ctx, p);
-            } else {
-                if (fp != NULL) {
-                    fwrite((&packet)->data, 1, (p)->size, fp);
-                    //LOGD("packet->size : %d", (&packet)->size);
-                }
-            }
-
-        }
+        num++;
+        p = av_packet_clone(&packet);
 
         // Is this a packet from the video stream?
         if (packet.stream_index == videoStream) {
@@ -316,6 +319,7 @@ start_decode(const char *file_name, YUVDataHandle callback) {
                 memcpy(s + pic_size, pFrame->data[1], pic_size / 4); // 写入U
                 memcpy(s + pic_size * 5 / 4, pFrame->data[2], pic_size / 4); // 写入V
 
+                //LOGD("FfmpegTag decode frame %d\n", num);
                 _Android_YuvDataHandle(s, newSize, videoWidth, videoHeight);
                 if (strlen(s) > 0) {}
 
@@ -326,6 +330,31 @@ start_decode(const char *file_name, YUVDataHandle callback) {
             }
 
         }
+
+        if (shouldRecording) {
+            if (isMp4Recording) {
+                /*
+                 * pts and dts should increase monotonically
+                 * pts should be >= dts
+                 */
+                p->flags |= AV_PKT_FLAG_KEY;
+                pts = p->pts;
+                p->pts += last_pts;
+                dts = p->dts;
+                p->dts += last_dts;
+                p->stream_index = 0;
+
+                writeCount = av_interleaved_write_frame(o_fmt_ctx, p);
+                //LOGD("FfmpegTag write frame %d, result: %d, pts: %d, dts: %d\n", num, writeCount, pts, dts);
+            } else {
+                if (fp != NULL) {
+                    fwrite((&packet)->data, 1, (p)->size, fp);
+                    //LOGD("packet->size : %d", (&packet)->size);
+                }
+            }
+
+        }
+        av_packet_unref(p);
         av_packet_unref(&packet);
         read_frame_result = av_read_frame(i_fmt_ctx, &packet);
         if (read_frame_result < 0) {
@@ -336,6 +365,7 @@ start_decode(const char *file_name, YUVDataHandle callback) {
         }
 
     }
+    LOGD("stop decode-----------------");
 
     last_dts += dts;
     last_pts += pts;
@@ -352,7 +382,7 @@ start_decode(const char *file_name, YUVDataHandle callback) {
     // Close the video file
     avformat_close_input(&i_fmt_ctx);
 
-    if (shouldRecording) {
+    if (isEndRecording && shouldRecording) {
         if (isMp4Recording) {
             endRecordMp4();
         } else {
@@ -366,6 +396,7 @@ start_decode(const char *file_name, YUVDataHandle callback) {
 }
 
 void end_decode() {
+    LOGD("FfmpegTag end_decode\n");
     shouldStopDecode = true;
 }
 
