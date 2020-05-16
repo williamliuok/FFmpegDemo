@@ -108,7 +108,6 @@ public class Ffmpegdecoder {
      */
     public void updateVideoSize(int width, int height) {
         StringBuilder wh = new StringBuilder().append(width).append(",").append(height);
-        CommonUtil.callUnity(wh.toString(), Method_Init_Yuv);
         LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder video size : " + wh);
     }
 
@@ -120,17 +119,6 @@ public class Ffmpegdecoder {
             listener.onDecodeFrame(width, height, bytes);
             return;
         }
-//        if (null == mByte) {
-//            mByte = bytes.clone();
-//        } else {
-//            System.arraycopy(bytes, 0, mByte, 0, bytes.length);
-//        }
-//        if (needCallUnity) {
-//            String s = Base64.encodeToString(bytes, Base64.DEFAULT);
-//            CommonUtil.callUnity(s, Method_Show_Yuv);
-//            LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder bytes length : " + bytes.length);
-//            LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder String length : " + s.length());
-//        }
     }
 
     public native int playVideo(String url);

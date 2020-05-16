@@ -171,7 +171,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
 
     AVDictionary *opts = NULL;
     av_dict_set(&opts, "rtsp_transport", "tcp", 0);   //采用tcp传输
-//    av_dict_set(&opts, "stimeout", "10000000", 0);   //设置超时10秒
+    //    av_dict_set(&opts, "stimeout", "10000000", 0);   //设置超时10秒
 
     // Open video file
     if (int err_code = avformat_open_input(&i_fmt_ctx, file_name, NULL, &opts) != 0) {
@@ -229,9 +229,6 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     // 获取视频宽高
     int videoWidth = pCodecCtx->width;
     int videoHeight = pCodecCtx->height;
-    callNativeUpdateVideoSize(env, instance, videoWidth, videoHeight);
-    //std::cout << "videoWidth : " << videoWidth << std::endl;
-    //std::cout << "videoHeight : " << videoHeight << std::endl;
 
     if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
         LOGE("Could not open codec.");
@@ -242,7 +239,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     AVFrame *pFrame = av_frame_alloc();
 
     // 用于渲染
-//    AVFrame *pFrameRGBA = av_frame_alloc();
+    //    AVFrame *pFrameRGBA = av_frame_alloc();
     AVFrame *pFrameYUV = av_frame_alloc();
     if (pFrameYUV == NULL || pFrame == NULL) {
         LOGE("Could not allocate video frame.");
@@ -296,13 +293,11 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
                 unsigned char *s = new unsigned char[newSize];
                 //写入数据
                 memcpy(s, pFrame->data[0], pic_size); // 写入Y
-
                 memcpy(s + pic_size, pFrame->data[1], pic_size / 4); // 写入U
-
                 memcpy(s + pic_size * 5 / 4, pFrame->data[2], pic_size / 4); // 写入V
 
-                callNativeUpdateFrame(env, instance, videoWidth, videoHeight,
-                                      reinterpret_cast<char *>(s), newSize);
+                callNativeUpdateFrame(env,instance,videoWidth, videoHeight,reinterpret_cast<char *>(s),newSize);
+
                 delete[] s;
             }
         }
@@ -356,7 +351,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_startPlay(JNIEnv *env, jobject instanc
     }
 
     i_fmt_ctx->probesize = 1 * 32; // 缩减探测数据尺寸，减少探测时间，优化首开延迟
-    //i_fmt_ctx->max_analyze_duration = 1 * AV_TIME_BASE;
+    i_fmt_ctx->max_analyze_duration = 1 * AV_TIME_BASE;
     // Retrieve stream information
     if (avformat_find_stream_info(i_fmt_ctx, NULL) < 0) {
         LOGE("Couldn't find stream information.");
@@ -482,7 +477,6 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_startPlay(JNIEnv *env, jobject instanc
                 for (h = 0; h < videoHeight; h++) {
                     memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
                 }
-
 
                 ANativeWindow_unlockAndPost(nativeWindow);
             }

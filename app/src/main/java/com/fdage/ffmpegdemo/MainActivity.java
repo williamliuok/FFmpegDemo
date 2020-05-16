@@ -76,8 +76,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         mSurfaceHolder = surfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
         // Example of a call to a native method
-//        TextView tv = findViewById(R.id.sample_text);
-//        tv.setText(stringFromJNI());
 
         btn_start.setOnClickListener(v -> {
             new Thread(() -> {

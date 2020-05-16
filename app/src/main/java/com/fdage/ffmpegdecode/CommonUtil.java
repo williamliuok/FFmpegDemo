@@ -52,13 +52,7 @@ public class CommonUtil {
             Method method = classtype.getMethod("UnitySendMessage", String.class, String.class, String.class);
             method.invoke(classtype, gameObjectName, methodName, args);
             return true;
-        } catch (ClassNotFoundException e) {
-            LogUtil.e("TAG", "getActivity: " + e.getMessage());
-        } catch (NoSuchMethodException e) {
-            LogUtil.e("TAG", "getActivity: " + e.getMessage());
-        } catch (IllegalAccessException e) {
-            LogUtil.e("TAG", "getActivity: " + e.getMessage());
-        } catch (InvocationTargetException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             LogUtil.e("TAG", "getActivity: " + e.getMessage());
         }
         return false;
