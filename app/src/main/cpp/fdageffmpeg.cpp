@@ -167,37 +167,33 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     LOGD("FfmpegTag start playvideo... url, %s", file_name);
     av_register_all();
 
-    i_fmt_ctx = avformat_alloc_context();
+    AVFormatContext *avFormatContext = avformat_alloc_context();
 
     AVDictionary *opts = NULL;
     av_dict_set(&opts, "rtsp_transport", "tcp", 0);   //采用tcp传输
     //    av_dict_set(&opts, "stimeout", "10000000", 0);   //设置超时10秒
 
     // Open video file
-    if (int err_code = avformat_open_input(&i_fmt_ctx, file_name, NULL, &opts) != 0) {
+    if (int err_code = avformat_open_input(&avFormatContext, file_name, NULL, &opts) != 0) {
         LOGE("FfmpegTag err_code : %d\n", err_code);
         LOGE("FfmpegTag Couldn't open file : %s \n", file_name);
         return -1; // Couldn't open file
     }
 
-    if (avformat_find_stream_info(i_fmt_ctx, NULL) < 0) {
-        fprintf(stderr, "could not find stream info\n");
-        return -1;
-    }
+    avFormatContext->probesize = 1 * 1024; // 缩减探测数据尺寸，减少探测时间，优化首开延迟
+    avFormatContext->max_analyze_duration = 1 * AV_TIME_BASE;
 
-    i_fmt_ctx->probesize = 1 * 1024; // 缩减探测数据尺寸，减少探测时间，优化首开延迟
-    i_fmt_ctx->max_analyze_duration = 1 * AV_TIME_BASE;
-
-    // Retrieve stream information
-    if (avformat_find_stream_info(i_fmt_ctx, NULL) < 0) {
+    if (avformat_find_stream_info(avFormatContext, &opts) < 0) {
         LOGE("FfmpegTag Couldn't find stream information.");
         return -1;
     }
 
+
+
     // Find the first video stream
     int videoStream = -1, i;
-    for (i = 0; i < i_fmt_ctx->nb_streams; i++) {
-        if (i_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO
+    for (i = 0; i < avFormatContext->nb_streams; i++) {
+        if (avFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO
             && videoStream < 0) {
             videoStream = i;
         }
@@ -208,10 +204,10 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     }
 
     // Get a pointer to the codec context for the video stream
-    AVCodecContext *pCodecCtx = i_fmt_ctx->streams[videoStream]->codec;
+    AVCodecContext *pCodecCtx = avFormatContext->streams[videoStream]->codec;
 
     // Find the decoder for the video stream
-    AVCodec *pCodec = avcodec_find_decoder(i_fmt_ctx->streams[videoStream]->codecpar->codec_id);
+    AVCodec *pCodec = avcodec_find_decoder(avFormatContext->streams[videoStream]->codecpar->codec_id);
     //std::cout << "FfmpegTag codec_id : " << pCodecCtx->codec_id << std::endl;
     //std::cout << "FfmpegTag AVCodec name : " << pCodec->name << std::endl;
 
@@ -219,11 +215,6 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     if (pCodec == NULL) {
         LOGE("Codec not found.");
         return -1; // Codec not found
-    }
-
-    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
-        LOGE("Could not open codec.");
-        return -1; // Could not open codec
     }
 
     // 获取视频宽高
@@ -272,13 +263,13 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     int frameFinished;
     AVPacket packet;
 
-    while (av_read_frame(i_fmt_ctx, &packet) >= 0 && !shouldStopDecode) {
+    while (av_read_frame(avFormatContext, &packet) >= 0 && !shouldStopDecode) {
         // Is this a packet from the video stream?
         if (packet.stream_index == videoStream) {
-            avcodec_send_packet(pCodecCtx, &packet);
-            avcodec_receive_frame(pCodecCtx, pFrame);
+//            avcodec_send_packet(pCodecCtx, &packet);
+//            avcodec_receive_frame(pCodecCtx, pFrame);
             // Decode video frame
-            //avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
+            avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
 
             // 并不是decode一次就可解码出一帧
             if (frameFinished) {
@@ -315,7 +306,7 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     avcodec_close(pCodecCtx);
 
     // Close the video file
-    avformat_close_input(&i_fmt_ctx);
+    avformat_close_input(&avFormatContext);
 
     env->ReleaseStringUTFChars(url_, file_name);
     //std::cout << "FfmpegTag shouldStopDecode : " << shouldStopDecode << std::endl;

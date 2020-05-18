@@ -117,7 +117,6 @@ public class Ffmpegdecoder {
     public void updateFrameData(int width, int height, byte[] bytes) {
         if (null != listener) {
             listener.onDecodeFrame(width, height, bytes);
-            return;
         }
     }
 
