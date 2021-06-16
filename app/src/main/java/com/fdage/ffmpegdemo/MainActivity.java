@@ -3,8 +3,10 @@ package com.fdage.ffmpegdemo;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
@@ -21,7 +23,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public static final int MODE_REPLAY_MP4 = 2;
     public static final int MODE_REPLAY_H264 = 3;
 
-    private SurfaceView surfaceView;
+    private TextureView surfaceView;
+//    private SurfaceView surfaceView;
     private SurfaceHolder mSurfaceHolder;
     private Button btn_start;
     private Button btn_start_record;
@@ -73,10 +76,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
             }
         });
-        mSurfaceHolder = surfaceView.getHolder();
-        mSurfaceHolder.addCallback(this);
+//        mSurfaceHolder = surfaceView.getHolder();
+//        mSurfaceHolder.addCallback(this);
         // Example of a call to a native method
 
+        surfaceView.setRotation(-90f);
         btn_start.setOnClickListener(v -> {
             new Thread(() -> {
 //                String url = "/storage/emulated/0/DCIM/Camera/VID_20190312_121130.mp4";
@@ -84,8 +88,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 //                String url = getExternalFilesDir("") + File.separator + "2019_10_30 11_13_25.mp4";
                 String url;
                 if(mode < 2) {
-                    url = "rtsp://192.168.10.1:554/ucast/12";
-                    ffmpegdecoder.StartDecode(url, mSurfaceHolder.getSurface());
+                    url = "rtsp://192.168.42.1/live";
+//                    url = "rtsp://192.168.10.1:554/ucast/12";
+                    ffmpegdecoder.StartDecode(url, new Surface(surfaceView.getSurfaceTexture()));
                 }else {
                     if(mode == MODE_REPLAY_MP4) {
                         url = Environment.getExternalStorageDirectory().getAbsolutePath() + "/test.mp4";
@@ -115,9 +120,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         btn_start_record.setOnClickListener(v -> {
             File file;
             if(mode == MODE_RECORD_MP4) {
-                file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/test.mp4");
+                file = new File(getExternalFilesDir("").getAbsolutePath() + "/test.mp4");
             }else {
-                file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/test.h264");
+                file = new File(getExternalFilesDir("").getAbsolutePath() + "/test.h264");
             }
             if(!file.exists()){
                 try {

@@ -66,7 +66,7 @@ uploadArchives {
             }
             pom.groupId = "com.fdage.ffmpeg"// 唯一标识（通常为模块包名，也可以任意）
             pom.artifactId = "FdageFfmpeg" // 项目名称（通常为类库模块名称，也可以任意）
-            pom.version = "1.1.22" // 版本号
+            pom.version = "1.1.27" // 版本号
         }
     }
 }

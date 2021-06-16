@@ -87,11 +87,11 @@ public class Ffmpegdecoder {
         stopFFmpegDecode();
     }
 
-    public void StartRecord(String file, boolean isMp4){
+    public void StartRecord(String file, boolean isMp4) {
         startRecord(file, isMp4);
     }
 
-    public void StopRecord(){
+    public void StopRecord() {
         endRecord();
     }
 
@@ -107,8 +107,9 @@ public class Ffmpegdecoder {
      * native解码时时更新java层帧数据
      */
     public void updateVideoSize(int width, int height) {
-        StringBuilder wh = new StringBuilder().append(width).append(",").append(height);
-        LogUtil.d("Ffmpegdecoder", "Ffmpegdecoder video size : " + wh);
+        if (null != videoSizeListener) {
+            videoSizeListener.onUpdateVideoSize(width, height);
+        }
     }
 
     /**
@@ -131,12 +132,21 @@ public class Ffmpegdecoder {
     private native int endRecord();
 
     private DecodeListener listener;
+    private UpdateVideoSizeListener videoSizeListener;
 
     public void setListener(DecodeListener listener) {
         this.listener = listener;
     }
 
+    public void setVideoSizeListener(UpdateVideoSizeListener videoSizeListener) {
+        this.videoSizeListener = videoSizeListener;
+    }
+
     public interface DecodeListener {
         void onDecodeFrame(int width, int height, byte[] data);
+    }
+
+    public interface UpdateVideoSizeListener {
+        void onUpdateVideoSize(int width, int height);
     }
 }

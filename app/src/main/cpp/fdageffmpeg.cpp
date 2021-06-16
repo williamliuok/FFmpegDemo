@@ -221,6 +221,8 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_playVideo(JNIEnv *env, jobject instanc
     int videoWidth = pCodecCtx->width;
     int videoHeight = pCodecCtx->height;
 
+    callNativeUpdateVideoSize(env, instance, videoWidth, videoHeight);
+
     if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
         LOGE("Could not open codec.");
         return -1; // Could not open codec
@@ -386,6 +388,8 @@ Java_com_fdage_ffmpegdecode_Ffmpegdecoder_startPlay(JNIEnv *env, jobject instanc
     // 获取视频宽高
     int videoWidth = pCodecCtx->width;
     int videoHeight = pCodecCtx->height;
+
+    callNativeUpdateVideoSize(env, instance, videoWidth, videoHeight);
 
     // 设置native window的buffer大小,可自动拉伸
     ANativeWindow_setBuffersGeometry(nativeWindow, videoWidth, videoHeight,
